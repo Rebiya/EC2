@@ -1,35 +1,44 @@
+# Deployment Guide for yene-kids-accessories full stack website
 
-## ✅ STEP-BY-STEP DEPLOYMENT GUIDE
+**Access URL:** [http://44.202.218.119:3000/](http://44.202.218.119:3000/)
 
-### 📍 Local Machine Instructions
+---
 
-#### 1. **Zip the Backend folder**
+## Overview
 
-In your local root directory (where `Backend/` is located):
+This document guides you through deploying the backend project to an AWS EC2 instance from your local machine.
+
+---
+
+## 📍 Local Machine Instructions
+
+### 1. Zip the Backend Folder
+
+In your local root directory (where the `Backend/` folder exists), run:
 
 ```bash
 zip -r backend.zip Backend
 ```
 
-📦 This compresses the full `Backend` folder (including the frontend `dist/` inside it) into `backend.zip`.
+> This creates a compressed `backend.zip` file containing the entire `Backend` folder and its contents (including the frontend `dist/` folder inside).
 
 ---
 
-#### 2. **Transfer `backend.zip` to EC2 via `scp`**
+### 2. Transfer the ZIP to EC2 Instance
 
-Use `scp` with your `.pem` key:
+Use `scp` with your `.pem` key to securely copy `backend.zip` to your EC2 home directory:
 
 ```bash
 scp -i ~/Downloads/yene-kids.pem backend.zip ubuntu@44.202.218.119:~/
 ```
 
-✅ This will copy `backend.zip` to your EC2 home directory: `/home/ubuntu`.
-
 ---
 
-### 💻 EC2 Instance Instructions
+## 💻 EC2 Instance Instructions
 
-#### 3. **SSH into your EC2 instance**
+### 3. SSH into the EC2 Instance
+
+Connect to your EC2 instance:
 
 ```bash
 ssh -i ~/Downloads/yene-kids.pem ubuntu@44.202.218.119
@@ -37,40 +46,40 @@ ssh -i ~/Downloads/yene-kids.pem ubuntu@44.202.218.119
 
 ---
 
-#### 4. **Unzip the project**
+### 4. Unzip the Project
 
-Once logged in:
+Extract the zipped project:
 
 ```bash
 unzip backend.zip
 ```
 
-📂 This will extract the `Backend` folder.
+> This will extract the `Backend` folder in your home directory.
 
 ---
 
-#### 5. **Install Node dependencies**
+### 5. Install Node Dependencies
 
-Navigate into the backend folder and install packages:
+Navigate to the `Backend` directory and install required packages:
 
 ```bash
 cd Backend
 npm install
 ```
 
-Make sure your `dist/` folder is correctly placed under `Frontend/` inside `Backend`.
+> Ensure the `dist/` folder is properly located inside `Frontend/` within `Backend`.
 
 ---
 
-#### 6. **Run the server**
+### 6. Start the Server
 
-If your entry point is `Index.js`, run:
+Run your Node.js server (assuming entry point is `Index.js`):
 
 ```bash
 node Index.js
 ```
 
-Or, if you're using something like `nodemon`:
+Or if using `nodemon` for auto-restart on changes:
 
 ```bash
 npx nodemon Index.js
@@ -78,9 +87,9 @@ npx nodemon Index.js
 
 ---
 
-## ✅ Optional: Keep the server running (forever)
+## ✅ Optional: Keep the Server Running Continuously
 
-To avoid the server shutting down after you exit SSH, use **`pm2`**:
+To keep your Node.js app running even after logging out, install and use **pm2**:
 
 ```bash
 sudo npm install -g pm2
@@ -91,16 +100,16 @@ pm2 startup
 
 ---
 
-## 📝 Summary of Commands
+## 📝 Quick Summary of Commands
 
-### On Local:
+### Local Machine
 
 ```bash
 zip -r backend.zip Backend
 scp -i ~/Downloads/yene-kids.pem backend.zip ubuntu@44.202.218.119:~/
 ```
 
-### On EC2:
+### EC2 Instance
 
 ```bash
 ssh -i ~/Downloads/yene-kids.pem ubuntu@44.202.218.119
@@ -109,4 +118,6 @@ cd Backend
 npm install
 node Index.js
 ```
+
+---
 
