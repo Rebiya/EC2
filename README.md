@@ -1,180 +1,112 @@
 
-# 📦 Deployment Workflow Documentation – Kids Accessories E-Commerce
+## ✅ STEP-BY-STEP DEPLOYMENT GUIDE
 
-This document captures the full technical journey of setting up and deploying the `Frontend` (built with Vite) into the `Backend` (Express server) hosted on an AWS EC2 instance. It includes all attempted solutions, issues, and final approaches.
+### 📍 Local Machine Instructions
 
----
+#### 1. **Zip the Backend folder**
 
-## 🗂 Project Structure
-
-```
-
-kids-accessories-Ecommerce/
-├── Backend/
-│   ├── index.js           # Express server entry point
-│   └── ...                # API logic, routes, DB config, etc.
-├── Frontend/
-│   ├── dist/              # Built Vite app (to be served)
-│   └── ...                # Vue/React/Vite source code
-
-````
-
----
-
-## 🧾 Goal
-
-Deploy the **frontend build output (`dist/`)** to an **EC2-hosted Express backend**, such that:
-
-- The backend serves static frontend content.
-- The same server handles both frontend and backend functionality.
-- You avoid using too much EC2 storage (Git full clone was a problem).
-
----
-
-## 🧱 Step-by-Step Deployment Guide
-
----
-
-### ✅ Step 1: Build Frontend Locally
+In your local root directory (where `Backend/` is located):
 
 ```bash
-cd kids-accessories-Ecommerce/Frontend
-npm run build
-````
+zip -r backend.zip Backend
+```
 
-This builds your Vite app into a production-ready `dist/` directory.
-
-> 🛑 **Issue Faced:**
->
-> ```
-> FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed
-> ```
->
-> **Cause:** Node.js memory not enough for build process.
-
-
+📦 This compresses the full `Backend` folder (including the frontend `dist/` inside it) into `backend.zip`.
 
 ---
 
-### ❌ Step 2: Attempted `git pull` on EC2
+#### 2. **Transfer `backend.zip` to EC2 via `scp`**
 
-Originally planned to run:
+Use `scp` with your `.pem` key:
 
 ```bash
-git pull origin main
+scp -i ~/Downloads/yene-kids.pem backend.zip ubuntu@44.202.218.119:~/
 ```
 
-> ❌ **Problem:**
->
-> * Frontend is large and slows down the EC2 instance.
-> * Not enough disk space to clone/pull full project.
+✅ This will copy `backend.zip` to your EC2 home directory: `/home/ubuntu`.
 
 ---
 
-### ❌ Step 3: Tried `git sparse-checkout` to pull only Backend
+### 💻 EC2 Instance Instructions
 
-Used commands:
+#### 3. **SSH into your EC2 instance**
 
 ```bash
-git clone --filter=blob:none --no-checkout <repo-url>.git
-cd <repo-name>
-git sparse-checkout init --cone
-git sparse-checkout set kids-accessories-Ecommerce/Backend
+ssh -i ~/Downloads/yene-kids.pem ubuntu@44.202.218.119
 ```
-
-> ❌ **Issue:**
-> Git removed unexpected files. Didn't keep `node_modules` or previously added `dist/`.
 
 ---
 
-### ✅ Step 4: Send Only `dist/` Using `scp`
+#### 4. **Unzip the project**
 
-From local PC:
+Once logged in:
 
 ```bash
-scp -i ~/Downloads/yene-kids.pem -r dist/ ubuntu@<EC2-IP>:~/kids-accessories-Ecommerce/Backend/Frontend
+unzip backend.zip
 ```
 
-* `-i`: Specifies your EC2 `.pem` key.
-* `-r`: Recursive copy (since `dist/` is a folder).
-* `scp`: Secure copy over SSH.
-* You are sending the Vite build only.
+📂 This will extract the `Backend` folder.
 
-> ❌ **Problem:**
->
-> * Slow transfer (took \~20 min) because of file count + upload speed.
-> * Doubts about whether `scp` was still working.
+---
 
-✅ **Tip:** Use `rsync` for faster/resumable uploads:
+#### 5. **Install Node dependencies**
+
+Navigate into the backend folder and install packages:
 
 ```bash
-rsync -avz -e "ssh -i ~/Downloads/yene-kids.pem" dist/ ubuntu@<EC2-IP>:~/kids-accessories-Ecommerce/Backend/Frontend
+cd Backend
+npm install
 ```
+
+Make sure your `dist/` folder is correctly placed under `Frontend/` inside `Backend`.
 
 ---
 
-### ✅ Step 5: Backend Configuration (`index.js`)
+#### 6. **Run the server**
 
-**Before:**
-
-```js
-const app = express();
-```
-
-**After:**
-
-```js
-const path = require("path");
-
-// Serve static files from dist
-app.use(express.static(path.join(__dirname, "Frontend", "dist")));
-
-// Catch-all route to serve index.html for frontend routing
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "Frontend", "dist", "index.html"));
-});
-```
-
-> ✅ **Now:** Visiting EC2 IP or domain shows the deployed frontend.
-
----
-
-### ✅ Step 6: Bonus Option – Transfer Entire Backend Manually
-
-Instead of Git clone:
-
-#### On Local:
+If your entry point is `Index.js`, run:
 
 ```bash
-tar -czf backend.tar.gz Backend
-scp -i ~/Downloads/yene-kids.pem backend.tar.gz ubuntu@<EC2-IP>:~/
+node Index.js
 ```
 
-#### On EC2:
+Or, if you're using something like `nodemon`:
 
 ```bash
-tar -xzf backend.tar.gz
-mv Backend kids-accessories-Ecommerce/
-rm backend.tar.gz
+npx nodemon Index.js
 ```
 
-> ✅ **Why this works:**
-> Faster, cleaner, avoids Git storage issues.
+---
+
+## ✅ Optional: Keep the server running (forever)
+
+To avoid the server shutting down after you exit SSH, use **`pm2`**:
+
+```bash
+sudo npm install -g pm2
+pm2 start Index.js
+pm2 save
+pm2 startup
+```
 
 ---
 
-## 🔍 Summary of Lessons Learned
+## 📝 Summary of Commands
 
-| Step | Task                | Issue                      | Resolution           |
-| ---- | ------------------- | -------------------------- | -------------------- |
-| 1    | Build frontend      | Memory error               | Use `NODE_OPTIONS`   |
-| 2    | Git pull on EC2     | Low space                  | Avoid full clone     |
-| 3    | Git sparse-checkout | Files removed unexpectedly | Avoid for EC2 setup  |
-| 4    | `scp dist/`         | Slow transfer              | Wait or use `rsync`  |
-| 5    | Backend config      | Needed to serve `dist/`    | Use `express.static` |
-| 6    | Deploy backend      | Avoid Git                  | Used `tar` + `scp`   |
+### On Local:
 
----
+```bash
+zip -r backend.zip Backend
+scp -i ~/Downloads/yene-kids.pem backend.zip ubuntu@44.202.218.119:~/
+```
 
+### On EC2:
 
+```bash
+ssh -i ~/Downloads/yene-kids.pem ubuntu@44.202.218.119
+unzip backend.zip
+cd Backend
+npm install
+node Index.js
+```
 
